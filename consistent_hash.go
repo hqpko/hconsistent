@@ -21,9 +21,20 @@ func NewConsistentHash() *ConsistentHash {
 	return &ConsistentHash{load: map[string]struct{}{}, hosts: map[uint64]string{}, index: []uint64{}}
 }
 
-func (c *ConsistentHash) Add(host string) {
+func (c *ConsistentHash) Add(hosts ...string) {
 	c.Lock()
 	defer c.Unlock()
+
+	for _, host := range hosts {
+		c.add(host)
+	}
+
+	sort.Slice(c.index, func(i, j int) bool {
+		return c.index[i] < c.index[j]
+	})
+}
+
+func (c *ConsistentHash) add(host string) {
 	if _, ok := c.load[host]; ok {
 		return
 	}
@@ -43,10 +54,6 @@ func (c *ConsistentHash) Add(host string) {
 		c.hosts[index] = host
 		c.index = append(c.index, index)
 	}
-
-	sort.Slice(c.index, func(i, j int) bool {
-		return c.index[i] < c.index[j]
-	})
 }
 
 func (c *ConsistentHash) Get(key string) string {
